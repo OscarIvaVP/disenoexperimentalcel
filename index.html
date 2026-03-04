@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluación: Diseño Experimental</title>
+    <!-- Librería para el Confeti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Librería para generar el PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #2b6cb0;
+            --secondary: #4299e1;
+            --bg: #ebf8ff;
+            --text: #2d3748;
+            --success: #48bb78;
+            --error: #f56565;
+            --warning: #ecc94b;
+            --white: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- Animación de Fondo --- */
+        .bg-bubbles {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; overflow: hidden; background: linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%);
+            margin: 0; padding: 0;
+        }
+        .bg-bubbles li {
+            position: absolute; list-style: none; display: block;
+            background-color: rgba(66, 153, 225, 0.2); bottom: -150px;
+            animation: floatUp 25s infinite linear; border-radius: 50%;
+            border: 2px solid rgba(66, 153, 225, 0.4);
+        }
+        .bg-bubbles li:nth-child(1) { left: 10%; width: 40px; height: 40px; animation-duration: 15s; }
+        .bg-bubbles li:nth-child(2) { left: 20%; width: 80px; height: 80px; animation-duration: 23s; animation-delay: 2s;}
+        .bg-bubbles li:nth-child(3) { left: 25%; width: 30px; height: 30px; animation-duration: 18s; animation-delay: 4s;}
+        .bg-bubbles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-duration: 22s; animation-delay: 0s;}
+        .bg-bubbles li:nth-child(5) { left: 70%; width: 50px; height: 50px; animation-duration: 19s; animation-delay: 1s;}
+        .bg-bubbles li:nth-child(6) { left: 80%; width: 90px; height: 90px; animation-duration: 26s; animation-delay: 3s;}
+        .bg-bubbles li:nth-child(7) { left: 60%; width: 35px; height: 35px; animation-duration: 16s; animation-delay: 6s;}
+        @keyframes floatUp { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(-1200px) rotate(360deg); opacity: 0; } }
+
+        /* --- Shake Animation --- */
+        @keyframes shake {
+            0% { transform: translateX(0); } 20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); } 60% { transform: translateX(-10px); }
+            80% { transform: translateX(10px); } 100% { transform: translateX(0); }
+        }
+        .shake { animation: shake 0.5s ease-in-out; }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15); width: 100%; max-width: 750px;
+            position: relative; backdrop-filter: blur(5px);
+        }
+        
+        /* --- ESTILOS PORTADA IMPACTANTE --- */
+        .hero-icon {
+            text-align: center;
+            margin-bottom: 10px;
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+        .hero-icon svg { width: 80px; height: 80px; fill: var(--primary); }
+        @keyframes floatIcon {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .gradient-text {
+            text-align: center; font-size: 36px; margin-bottom: 5px; font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, #3182ce 50%, var(--secondary) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero-subtitle {
+            text-align: center; color: #4a5568; font-size: 16px; margin-bottom: 20px; line-height: 1.5;
+        }
+        .credits { text-align: center; font-size: 14px; color: #718096; margin-bottom: 30px; font-style: italic; background: #edf2f7; padding: 10px; border-radius: 8px;}
+        
+        .pulse-btn {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(43, 108, 176, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(43, 108, 176, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(43, 108, 176, 0); }
+        }
+
+        h1.game-title { text-align: center; color: var(--primary); font-size: 28px; margin-bottom: 5px;}
+        h2 { text-align: center; color: var(--text); font-size: 20px; font-weight: 500;}
+
+        .input-group { background: #f7fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 25px; }
+        .input-group label { display: block; margin-bottom: 10px; font-weight: bold; color: var(--primary); font-size: 18px; text-align: center;}
+        .name-input { width: 100%; padding: 15px; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 18px; box-sizing: border-box; text-align: center; transition: all 0.3s; }
+        .name-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(66,153,225,0.3); }
+
+        .progress-bar { width: 100%; background-color: #e2e8f0; border-radius: 8px; margin-bottom: 20px; height: 10px; overflow: hidden; }
+        .progress { height: 100%; background-color: var(--primary); border-radius: 8px; width: 0%; transition: width 0.4s ease; }
+        
+        .btn { background-color: var(--primary); color: white; border: none; padding: 16px 20px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; width: 100%; transition: all 0.3s; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px;}
+        .btn:hover:not(:disabled) { background-color: var(--secondary); transform: scale(1.02); }
+        .btn:disabled { background-color: #a0aec0; cursor: not-allowed; }
+        .hidden { display: none !important; }
+
+        /* Estilos Feedback */
+        #feedback { font-weight: bold; margin-top: 20px; text-align: center; font-size: 18px; min-height: 27px; padding: 10px; border-radius: 8px;}
+        .feedback-success { background-color: #c6f6d5; color: #276749; }
+        .feedback-error { background-color: #fed7d7; color: #c53030; }
+
+        /* --- DINÁMICAS ESPECÍFICAS --- */
+        
+        /* 1. Selección */
+        .option-btn {
+            display: block; width: 100%; padding: 15px; margin: 10px 0; background: #edf2f7; border: 2px solid transparent;
+            border-radius: 8px; cursor: pointer; text-align: left; font-size: 16px; transition: all 0.2s;
+        }
+        .option-btn:hover:not(:disabled) { border-color: var(--secondary); background: #e2e8f0; transform: translateX(5px); }
+        .option-btn.correct { background: var(--success); color: white; border-color: var(--success); }
+        .option-btn.wrong { background: var(--error); color: white; border-color: var(--error); }
+
+        /* 2. Rellenar */
+        .fill-text { font-size: 18px; line-height: 1.8; text-align: center; }
+        .fill-input {
+            border: none; border-bottom: 3px solid var(--primary); background: rgba(237, 242, 247, 0.5); outline: none;
+            font-size: 18px; padding: 2px 8px; width: 150px; text-align: center; font-weight: bold; border-radius: 4px 4px 0 0;
+        }
+        .fill-input.correct { border-bottom-color: var(--success); color: var(--success); }
+        .fill-input.wrong { border-bottom-color: var(--error); color: var(--error); }
+
+        /* 3. Ahorcado */
+        .hangman-word { font-size: 32px; letter-spacing: 8px; text-align: center; margin: 20px 0; font-weight: bold;}
+        .keyboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 20px;}
+        .key { padding: 10px 15px; cursor: pointer; border: 2px solid #cbd5e0; background: white; border-radius: 6px; font-weight: bold; }
+        .key:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+        .key:disabled { background: #edf2f7; color: #a0aec0; }
+
+        /* 4. Drag & Drop y Mini-Lab */
+        .drag-container { display: flex; flex-direction: column; gap: 20px; margin-top: 15px;}
+        @media(min-width: 600px) { .drag-container { flex-direction: row; } }
+        .draggables, .dropzones { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        .draggable { background: var(--primary); color: white; padding: 12px; border-radius: 8px; cursor: grab; text-align: center; font-weight: 500; box-shadow: 0 4px 6px rgba(0,0,0,0.1); touch-action: none; -webkit-user-select: none; user-select: none; }
+        .draggable:active { cursor: grabbing; }
+        .dropzone-wrapper { background: #f7fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;}
+        .dropzone-label { font-size: 14px; color: #4a5568; margin-bottom: 8px; display: block; text-align: center; font-weight: bold;}
+        .dropzone { border: 2px dashed #a0aec0; padding: 15px; border-radius: 8px; min-height: 24px; text-align: center; background: white; transition: all 0.3s; cursor: pointer; touch-action: none;}
+        .dropzone.dragover { background: #ebf8ff; border-color: var(--primary); transform: scale(1.02); }
+        .dropzone.filled { background: #e2e8f0; border-style: solid; font-weight: bold; border-color: var(--secondary); color: var(--text); }
+
+        /* 5. A Contrarreloj (Rapid-Fire) */
+        .timer-bar-container { width: 100%; height: 15px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+        .timer-bar { height: 100%; background: var(--warning); width: 100%; transition: width 0.2s linear, background-color 0.3s; }
+        .timer-bar.danger { background: var(--error); }
+        .rf-buttons { display: flex; gap: 15px; }
+        .rf-btn { flex: 1; padding: 20px; font-size: 20px; border-radius: 10px; border: none; cursor: pointer; color: white; font-weight: bold; transition: transform 0.2s;}
+        .rf-true { background: var(--success); } .rf-true:hover { background: #38a169; transform: scale(1.05);}
+        .rf-false { background: var(--error); } .rf-false:hover { background: #e53e3e; transform: scale(1.05);}
+
+        /* 6. Sorter (Clasificador) */
+        .sorter-bins { display: flex; gap: 10px; margin-top: 20px; }
+        .sorter-bin { flex: 1; border: 3px solid #cbd5e0; border-radius: 10px; padding: 10px; min-height: 150px; display: flex; flex-direction: column; align-items: center; background: #f7fafc; transition: all 0.2s; touch-action: none;}
+        .sorter-bin h3 { margin: 0 0 10px 0; font-size: 16px; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 5px;}
+        .sorter-bin.dragover { background: #ebf8ff; border-color: var(--primary); transform: scale(1.02); }
+
+        /* 7. Memorama (Cartas) */
+        .memory-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px;}
+        @media(min-width: 500px) { .memory-grid { grid-template-columns: repeat(4, 1fr); } }
+        .memory-card { perspective: 1000px; height: 100px; cursor: pointer; }
+        .memory-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
+        .memory-card.flipped .memory-inner { transform: rotateY(180deg); }
+        .memory-front, .memory-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 8px; padding: 5px; box-sizing: border-box; font-size: 13px; font-weight: 500;}
+        .memory-front { background-color: var(--primary); color: white; font-size: 24px;}
+        .memory-back { background-color: white; color: var(--text); transform: rotateY(180deg); border: 2px solid var(--primary); }
+        .memory-card.matched .memory-back { background-color: #c6f6d5; border-color: var(--success); }
+
+        /* Mejoras táctiles para móviles */
+        @media (max-width: 600px) {
+            .draggable { padding: 14px 16px; font-size: 15px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+            .dropzone { padding: 18px; min-height: 44px; }
+            .sorter-bins { flex-direction: column; }
+            .sorter-bin { min-height: 100px; }
+            .drag-container { flex-direction: column; }
+            .container { padding: 15px; }
+            .gradient-text { font-size: 26px; }
+            .btn { padding: 14px 16px; font-size: 16px; }
+            .key { padding: 8px 12px; font-size: 14px; }
+        }
+
+        /* Pantallas */
+        #start-screen, #game-screen, #result-screen { animation: fadeIn 0.5s ease; }
+        .result-box { text-align: center; background: #f7fafc; padding: 30px; border-radius: 12px; border: 2px solid #e2e8f0; margin-top: 20px; }
+        .result-grade { font-size: 64px; font-weight: bold; color: var(--primary); margin: 10px 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<ul class="bg-bubbles"><li></li><li></li><li></li><li></li><li></li><li></li><li></li></ul>
+
+<div class="container" id="main-container">
+    
+    <!-- PANTALLA DE INICIO MEJORADA -->
+    <div id="start-screen">
+        <div class="hero-icon">
+            <!-- Icono de matraz/laboratorio -->
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19.8 16.4L15 9V4h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v5L4.2 16.4A4.015 4.015 0 0 0 7.5 22h9a4.015 4.015 0 0 0 3.3-5.6zM6 16l3.5-5.6V4h5v6.4L18 16H6z" opacity="0.3"/>
+                <path d="M19.8 16.4L15 9v-1h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v1l-4.8 7.4A4.015 4.015 0 0 0 7.5 22h9a4.015 4.015 0 0 0 3.3-5.6zM7.5 20a2 2 0 0 1-1.6-3.1L9 12h6l3.1 4.9A2 2 0 0 1 16.5 20h-9z"/>
+                <circle cx="10" cy="16" r="1"/>
+                <circle cx="14" cy="17" r="1.5"/>
+                <circle cx="12" cy="14" r="1"/>
+            </svg>
+        </div>
+        <h1 class="gradient-text">Diseño Experimental</h1>
+        <p class="hero-subtitle">Demuestra tus conocimientos sobre clasificación de variables, principios básicos y arreglos factoriales a lo largo de 20 dinámicos retos.</p>
+        
+        <div class="credits">
+            Diseñado por <strong>Oscar Ivan Vargas Pineda</strong> asistido por IA
+        </div>
+        
+        <div class="input-group">
+            <label for="student-name">¿Quién va a realizar la prueba?</label>
+            <input type="text" id="student-name" class="name-input" placeholder="Escribe tu nombre completo aquí" autocomplete="off">
+        </div>
+        <button class="btn pulse-btn" onclick="startGame()">Comenzar Reto Interactívo</button>
+    </div>
+
+    <!-- JUEGO -->
+    <div id="game-screen" class="hidden">
+        <div style="display:flex; justify-content: space-between; align-items:center;">
+            <h1 class="game-title" style="margin:0; font-size: 20px;">Evaluación en Progreso</h1>
+            <div id="status" style="font-weight: bold; color: #718096; background: #edf2f7; padding: 5px 10px; border-radius: 20px;">1 / 20</div>
+        </div>
+        <div class="progress-bar" style="margin-top: 15px;"><div class="progress" id="progress"></div></div>
+        
+        <div id="challenge-area"></div>
+        <div id="feedback"></div>
+        
+        <button id="next-btn" class="btn hidden" onclick="nextChallenge()">Siguiente Reto</button>
+    </div>
+
+    <!-- RESULTADOS -->
+    <div id="result-screen" class="hidden">
+        <h1 class="gradient-text">¡Misión Completada!</h1>
+        <div class="result-box">
+            <h2 id="final-student-name" style="font-size: 24px; color: var(--text);">Nombre</h2>
+            <p style="font-size: 18px; color: #4a5568;">Tu calificación final es:</p>
+            <div class="result-grade" id="final-grade">0.0</div>
+            <p style="color: #718096; font-size: 14px; font-weight: bold;">ESCALA DE 0.0 A 5.0</p>
+        </div>
+        <button class="btn pulse-btn" style="margin-top: 20px; background-color: var(--success);" onclick="downloadPDF()">Descargar Reporte Profesional PDF</button>
+        <button class="btn" style="margin-top: 10px; background-color: #a0aec0; box-shadow: none;" onclick="location.reload()">Volver a intentar</button>
+    </div>
+
+</div>
+
+<script>
+    let studentName = "";
+    let currentIdx = 0;
+    let score = 0; 
+    let topicsToReview = new Set(); 
+    let activeTimer = null; // Para detener los timer de rapidfire
+
+    // VARIABLES TEMPORALES
+    let hangmanErrors = 0, hangmanGuessed = [];
+    let memoryFlipped = [], memoryMatched = 0;
+
+    // --- BASE DE DATOS DE RETOS (20 Retos) ---
+    const challenges = [
+        // 1. Selección Básica
+        { type: 'select', topic: 'Tipos de Investigación', question: "¿Qué tipo de investigación controla factores externos, tiene escala reducida y analiza causa-efecto?", options: ["Observacional", "Experimental", "Transversal", "Descriptiva"], answer: 1 },
+        // 2. A Contrarreloj (Rapid-fire)
+        { type: 'rapidfire', topic: 'Factores de Ruido', question: "A Contrarreloj: Un factor de ruido es un factor que probablemente tiene un efecto en la respuesta pero que NO nos interesa estudiar.", answer: true },
+        // 3. Rellenar
+        { type: 'fill', topic: 'Variables', question: "En el experimento, la causa es la variable <input type='text' class='fill-input' data-answer='independiente'> (factor), y el efecto se mide en la variable <input type='text' class='fill-input' data-answer='dependiente'>." },
+        // 4. Memorama
+        { type: 'memory', topic: 'Términos Clave', question: "Memorama: Encuentra las parejas conceptuales.", pairs: [ {a: "Pseudoréplica", b: "Falta de independencia"}, {a: "Factor", b: "Variable Independiente"}, {a: "Tratamiento", b: "Conjugación de niveles"}, {a: "Unidad Muestral", b: "Donde se mide el efecto"} ] },
+        // 5. Mini-Lab
+        { type: 'minilab', topic: 'Aplicación Práctica', question: "Mini-Lab: Evaluar cómo 3 concentraciones de azúcar afectan el crecimiento de bacterias en una placa de Petri.", factors: [ {drag: "Concentración de azúcar", target: "Causa (Factor)"}, {drag: "Crecimiento bacteriano", target: "Efecto (Variable Respuesta)"}, {drag: "Placa de Petri", target: "Unidad Experimental"} ], distractors: ["El laboratorio"] },
+        // 6. Selección (Matemáticas)
+        { type: 'select', topic: 'Cálculo de Tratamientos', question: "Un experimento multifactorial tiene 3 factores con 2 niveles cada uno (2³). ¿Cuántos tratamientos hay en total?", options: ["6", "8", "9", "27"], answer: 1 },
+        // 7. Drag (Diseños)
+        { type: 'drag', topic: 'Diseños DCA y DBCA', question: "Relaciona las siglas del diseño experimental:", pairs: [ {match: "Orden aleatorio (Solo 2 fuentes de variabilidad)", drag: "DCA"}, {match: "Aísla factores de ruido creando agrupaciones (3 fuentes)", drag: "DBCA"} ], distractors: ["DBA", "DVA"] },
+        // 8. Sorter (Clasificador)
+        { type: 'sorter', topic: 'Experimental vs Observacional', question: "Clasifica las características en el contenedor correcto:", bins: ["Experimental", "Observacional"], items: [ {text: "Controla factores externos", bin: 0}, {text: "Realidad estudiada compleja", bin: 1}, {text: "Escala espacial amplia", bin: 1}, {text: "Análisis Causa-Efecto", bin: 0} ] },
+        // 9. Hangman
+        { type: 'hangman', topic: 'Tipos de Conjetura', question: "Hipótesis que afirma que una variable afecta directamente a otra (ej. 'El tiempo de batido influye en el volumen').", word: "CAUSAL" },
+        // 10. Rellenar
+        { type: 'fill', topic: 'Diseño Balanceado', question: "Un diseño es <input type='text' class='fill-input' data-answer='balanceado'> cuando utiliza exactamente el mismo número de repeticiones en cada tratamiento." },
+        // 11. Rapidfire
+        { type: 'rapidfire', topic: 'Fuentes de variabilidad', question: "A Contrarreloj: En un Diseño Completamente al Azar (DCA), se consideran 3 fuentes de variabilidad: tratamiento, bloque y error aleatorio.", answer: false },
+        // 12. Memorama
+        { type: 'memory', topic: 'Principios Básicos', question: "Memorama: Conecta el Principio con su definición.", pairs: [ {a: "Replicación", b: "Estima varianza del error"}, {a: "Aleatorización", b: "Valida la estimación del error"}, {a: "Control Local", b: "Disminuye error experimental"}, {a: "Conjetura", b: "Juicio de valor (V/F)"} ] },
+        // 13. Selección
+        { type: 'select', topic: 'Modelos de Efectos', question: "¿Qué modelo de efectos permite inferir conclusiones sobre otros tratamientos que no se consideraron en el análisis inicial debido a su representatividad?", options: ["Efectos Fijos", "Efectos Constantes", "Efectos Aleatorios", "Efectos Bloqueados"], answer: 2 },
+        // 14. Drag
+        { type: 'drag', topic: 'Clasificación de Arreglos', question: "Relaciona según la cantidad de factores:", pairs: [ {match: "Un solo factor conforma los tratamientos.", drag: "Unifactorial"}, {match: "Más de un factor conforma los tratamientos.", drag: "Multifactorial"} ], distractors: ["Pre-experimental"] },
+        // 15. Mini-Lab
+        { type: 'minilab', topic: 'Aplicación Práctica', question: "Mini-Lab: Investigar si la cantidad de colorante afecta la densidad de color en especímenes de tela.", factors: [ {drag: "Cantidad de colorante", target: "Causa (Factor)"}, {drag: "Densidad de color", target: "Efecto (Variable Respuesta)"}, {drag: "Especímenes de telas", target: "Unidad Experimental"} ], distractors: ["Máquina de teñido"] },
+        // 16. Sorter
+        { type: 'sorter', topic: 'Medición en el tiempo', question: "Clasifica según el número de ocasiones en que se mide la variable (Tiempo):", bins: ["Transversal", "Longitudinal"], items: [ {text: "Se mide una sola vez", bin: 0}, {text: "Se mide a través del tiempo", bin: 1}, {text: "Datos en un momento específico", bin: 0}, {text: "Seguimiento periódico", bin: 1} ] },
+        // 17. Rapidfire
+        { type: 'rapidfire', topic: 'Unidad Experimental', question: "A Contrarreloj: La Unidad Muestral es el objeto grande que se utiliza para realizar el experimento y que CONTIENE en su interior a la Unidad Experimental.", answer: false },
+        // 18. Selección (Matemáticas 2)
+        { type: 'select', topic: 'Cálculo de Tratamientos', question: "Si analizamos 2 factores (K=2) y cada uno tiene 3 niveles (3²). ¿Cuántos tratamientos se formarán?", options: ["6", "8", "9", "12"], answer: 2 },
+        // 19. Hangman
+        { type: 'hangman', topic: 'Diseño en Bloques', question: "Factores adicionales que pueden afectar el estudio son agrupados o puestos en ________ para compararse de forma individual.", word: "BLOQUES" },
+        // 20. Sorter
+        { type: 'sorter', topic: 'Planeación de la toma de datos', question: "Clasifica según la Planeación de toma de datos:", bins: ["Retrospectiva", "Prospectiva"], items: [ {text: "Datos del pasado", bin: 0}, {text: "Hacia el futuro", bin: 1}, {text: "Registros históricos", bin: 0}, {text: "Experimento nuevo planeado", bin: 1} ] }
+    ];
+
+    // --- FUNCIONES CORE ---
+    function triggerConfetti() { confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#48bb78', '#2b6cb0', '#f6e05e', '#ffffff'] }); }
+    function triggerShake() {
+        const container = document.getElementById('main-container');
+        container.classList.remove('shake'); void container.offsetWidth; container.classList.add('shake');
+    }
+    function showFeedback(msg, type) {
+        const fb = document.getElementById('feedback');
+        fb.innerText = msg; fb.className = type === 'success' ? 'feedback-success' : 'feedback-error';
+        if(type === 'success') triggerConfetti();
+        if(type === 'error') triggerShake();
+    }
+    function clearFeedback() { document.getElementById('feedback').className = ''; document.getElementById('feedback').innerText = ''; }
+
+    function startGame() {
+        const nameInput = document.getElementById('student-name');
+        if (nameInput.value.trim().length < 3) { alert("Por favor, ingresa tu nombre completo para continuar."); return; }
+        studentName = nameInput.value.trim();
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        loadChallenge();
+    }
+
+    function loadChallenge() {
+        if (activeTimer) clearInterval(activeTimer); // Limpiar timers previos
+        const area = document.getElementById('challenge-area');
+        area.innerHTML = ''; clearFeedback(); document.getElementById('next-btn').classList.add('hidden');
+        
+        document.getElementById('status').innerText = `${currentIdx + 1} / ${challenges.length}`;
+        document.getElementById('progress').style.width = `${(currentIdx / challenges.length) * 100}%`;
+
+        const ch = challenges[currentIdx];
+        if(ch.type !== 'fill') {
+            const h2 = document.createElement('h2'); h2.innerHTML = ch.question; area.appendChild(h2);
+        }
+
+        if (ch.type === 'select') renderSelect(ch);
+        else if (ch.type === 'fill') renderFill(ch);
+        else if (ch.type === 'hangman') renderHangman(ch);
+        else if (ch.type === 'drag') renderDrag(ch);
+        else if (ch.type === 'rapidfire') renderRapidfire(ch);
+        else if (ch.type === 'memory') renderMemory(ch);
+        else if (ch.type === 'minilab') renderMinilab(ch);
+        else if (ch.type === 'sorter') renderSorter(ch);
+    }
+
+    function nextChallenge() {
+        currentIdx++;
+        if (currentIdx < challenges.length) loadChallenge();
+        else {
+            document.getElementById('progress').style.width = '100%';
+            setTimeout(() => {
+                document.getElementById('game-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.remove('hidden');
+                document.getElementById('final-student-name').innerText = studentName.toUpperCase();
+                const grade = ((score / challenges.length) * 5.0).toFixed(1);
+                const gEl = document.getElementById('final-grade'); gEl.innerText = grade;
+                if(grade >= 3.0) { gEl.style.color = 'var(--success)'; triggerConfetti(); } else { gEl.style.color = 'var(--error)'; }
+            }, 400);
+        }
+    }
+
+    // --- RENDERIZADORES DE DINÁMICAS ---
+
+    // 1. SELECT
+    function renderSelect(ch) {
+        const area = document.getElementById('challenge-area');
+        ch.options.forEach((opt, idx) => {
+            const btn = document.createElement('button'); btn.className = 'option-btn'; btn.innerText = opt;
+            btn.onclick = () => {
+                document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+                if (idx === ch.answer) { btn.classList.add('correct'); showFeedback('¡Correcto!', 'success'); score++; } 
+                else { btn.classList.add('wrong'); document.querySelectorAll('.option-btn')[ch.answer].classList.add('correct'); showFeedback('Incorrecto.', 'error'); topicsToReview.add(ch.topic); }
+                document.getElementById('next-btn').classList.remove('hidden');
+            };
+            area.appendChild(btn);
+        });
+    }
+
+    // 2. FILL
+    function renderFill(ch) {
+        const area = document.getElementById('challenge-area');
+        const p = document.createElement('p'); p.className = 'fill-text'; p.innerHTML = ch.question; area.appendChild(p);
+        const btn = document.createElement('button'); btn.className = 'btn'; btn.innerText = 'Verificar';
+        btn.onclick = () => {
+            let allC = true;
+            document.querySelectorAll('.fill-input').forEach(inp => {
+                const ans = inp.getAttribute('data-answer').toLowerCase();
+                const val = inp.value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (val === ans) inp.classList.add('correct');
+                else { inp.classList.add('wrong'); inp.value = inp.getAttribute('data-answer'); allC = false; }
+                inp.disabled = true;
+            });
+            if (allC) { showFeedback('¡Correcto!', 'success'); score++; } else { showFeedback('Revisa las correcciones.', 'error'); topicsToReview.add(ch.topic); }
+            btn.classList.add('hidden'); document.getElementById('next-btn').classList.remove('hidden');
+        };
+        area.appendChild(btn);
+    }
+
+    // 3. HANGMAN
+    function renderHangman(ch) {
+        hangmanErrors = 0; hangmanGuessed = [];
+        const area = document.getElementById('challenge-area');
+        area.innerHTML += `<div class='hangman-word' id='hm-word'></div><p id='hm-errors' style='text-align:center; color:#718096;'></p><div class='keyboard' id='hm-kb'></div>`;
+        const letters = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ".split('');
+        letters.forEach(l => {
+            const btn = document.createElement('button'); btn.className = 'key'; btn.innerText = l;
+            btn.onclick = () => { btn.disabled = true; hangmanGuessed.push(l); if (!ch.word.includes(l)) hangmanErrors++; updateHangman(ch); };
+            document.getElementById('hm-kb').appendChild(btn);
+        });
+        updateHangman(ch);
+    }
+    function updateHangman(ch) {
+        let disp = '', won = true;
+        for (let c of ch.word) { if (hangmanGuessed.includes(c)) disp += c + ' '; else { disp += '_ '; won = false; } }
+        document.getElementById('hm-word').innerText = disp;
+        document.getElementById('hm-errors').innerText = `Errores: ${hangmanErrors} / 4`;
+        if (won) { document.querySelectorAll('.key').forEach(b => b.disabled = true); showFeedback('¡Bien!', 'success'); score++; document.getElementById('next-btn').classList.remove('hidden'); } 
+        else if (hangmanErrors >= 4) { document.querySelectorAll('.key').forEach(b => b.disabled = true); document.getElementById('hm-word').innerText = ch.word.split('').join(' '); document.getElementById('hm-word').style.color = 'var(--error)'; showFeedback('Agotaste intentos.', 'error'); topicsToReview.add(ch.topic); document.getElementById('next-btn').classList.remove('hidden'); }
+    }
+
+    // 4. DRAG
+    function renderDrag(ch) {
+        const area = document.getElementById('challenge-area');
+        let html = `<div class='drag-container'><div class='draggables' id='dg-list'></div><div class='dropzones' id='dz-list'></div></div><p style="text-align:center; font-size:14px; color:#718096;">Arrastra al recuadro punteado. Toca el recuadro para quitar.</p><button class='btn' id='dg-btn'>Verificar</button>`;
+        area.innerHTML += html;
+        let opts = ch.pairs.map(p => p.drag).concat(ch.distractors || []).sort(() => Math.random() - 0.5);
+        opts.forEach((o, i) => {
+            let d = document.createElement('div'); d.className = 'draggable'; d.draggable = true; d.innerText = o; d.id = 'drg-'+i;
+            d.ondragstart = (e) => { e.dataTransfer.setData('text', o); e.dataTransfer.setData('id', d.id); };
+            document.getElementById('dg-list').appendChild(d);
+        });
+        ch.pairs.forEach(p => {
+            let zc = document.createElement('div'); zc.className = 'dropzone-wrapper';
+            zc.innerHTML = `<span class='dropzone-label'>${p.match}</span>`;
+            let z = document.createElement('div'); z.className = 'dropzone'; z.setAttribute('data-exp', p.drag);
+            z.ondragover = e => { e.preventDefault(); z.classList.add('dragover'); };
+            z.ondragleave = e => z.classList.remove('dragover');
+            z.ondrop = e => {
+                e.preventDefault(); z.classList.remove('dragover');
+                if(z.innerText !== "") { let old = z.getAttribute('data-src'); if(old) document.getElementById(old).style.display = 'block'; }
+                z.innerText = e.dataTransfer.getData('text'); z.setAttribute('data-src', e.dataTransfer.getData('id'));
+                z.classList.add('filled'); document.getElementById(e.dataTransfer.getData('id')).style.display = 'none';
+            };
+            z.onclick = () => { if(z.innerText !== ""){ document.getElementById(z.getAttribute('data-src')).style.display = 'block'; z.innerText=""; z.classList.remove('filled'); } };
+            zc.appendChild(z); document.getElementById('dz-list').appendChild(zc);
+        });
+        document.getElementById('dg-btn').onclick = () => {
+            let zs = document.querySelectorAll('.dropzone'), fill = 0, corr = 0;
+            zs.forEach(z => { if(z.innerText !== "") fill++; });
+            if(fill < ch.pairs.length) return alert("Faltan recuadros.");
+            zs.forEach(z => {
+                z.onclick = null;
+                if(z.innerText === z.getAttribute('data-exp')){ corr++; z.style.borderColor='var(--success)'; z.style.color='var(--success)'; }
+                else { z.style.borderColor='var(--error)'; z.style.color='var(--error)'; z.innerHTML += `<br><small style="color:#718096;">Era: ${z.getAttribute('data-exp')}</small>`; }
+            });
+            document.querySelectorAll('.draggable').forEach(d => d.removeAttribute('draggable'));
+            if(corr === ch.pairs.length){ showFeedback('¡Perfecto!', 'success'); score++; } else { showFeedback('Hay errores.', 'error'); topicsToReview.add(ch.topic); }
+            document.getElementById('dg-btn').classList.add('hidden'); document.getElementById('next-btn').classList.remove('hidden');
+        };
+    }
+
+    // 5. RAPID FIRE (DOBLE TIEMPO)
+    function renderRapidfire(ch) {
+        const area = document.getElementById('challenge-area');
+        area.innerHTML += `<div class="timer-bar-container"><div class="timer-bar" id="rf-timer"></div></div>
+                           <div class="rf-buttons">
+                               <button class="rf-btn rf-true" id="rf-t">Verdadero</button>
+                               <button class="rf-btn rf-false" id="rf-f">Falso</button>
+                           </div>`;
+        let timeLeft = 100;
+        const bar = document.getElementById('rf-timer');
+        
+        function resolve(answered, isTrueBtn) {
+            clearInterval(activeTimer);
+            document.getElementById('rf-t').disabled = true; document.getElementById('rf-f').disabled = true;
+            if(!answered) { showFeedback('¡Tiempo agotado!', 'error'); topicsToReview.add(ch.topic); }
+            else if((isTrueBtn && ch.answer === true) || (!isTrueBtn && ch.answer === false)) { showFeedback('¡Rápido y correcto!', 'success'); score++; }
+            else { showFeedback('Respuesta incorrecta.', 'error'); topicsToReview.add(ch.topic); }
+            document.getElementById('next-btn').classList.remove('hidden');
+        }
+
+        // Se cambió de 100ms a 200ms para dar el DOBLE de tiempo
+        activeTimer = setInterval(() => {
+            timeLeft -= 1; bar.style.width = timeLeft + '%';
+            if (timeLeft < 30) bar.classList.add('danger');
+            if (timeLeft <= 0) resolve(false);
+        }, 200);
+
+        document.getElementById('rf-t').onclick = () => resolve(true, true);
+        document.getElementById('rf-f').onclick = () => resolve(true, false);
+    }
+
+    // 6. MEMORY
+    function renderMemory(ch) {
+        memoryFlipped = []; memoryMatched = 0;
+        const area = document.getElementById('challenge-area');
+        let cards = [];
+        ch.pairs.forEach((p, i) => { cards.push({t: p.a, id: i}, {t: p.b, id: i}); });
+        cards.sort(() => Math.random() - 0.5);
+        
+        let grid = document.createElement('div'); grid.className = 'memory-grid';
+        cards.forEach((c, idx) => {
+            let card = document.createElement('div'); card.className = 'memory-card'; card.setAttribute('data-id', c.id);
+            card.innerHTML = `<div class="memory-inner"><div class="memory-front">?</div><div class="memory-back">${c.t}</div></div>`;
+            card.onclick = () => {
+                if(card.classList.contains('flipped') || memoryFlipped.length >= 2) return;
+                card.classList.add('flipped'); memoryFlipped.push(card);
+                if(memoryFlipped.length === 2) {
+                    setTimeout(() => {
+                        if(memoryFlipped[0].getAttribute('data-id') === memoryFlipped[1].getAttribute('data-id')) {
+                            memoryFlipped[0].classList.add('matched'); memoryFlipped[1].classList.add('matched');
+                            memoryMatched++;
+                            if(memoryMatched === ch.pairs.length) { showFeedback('¡Memoria excelente!', 'success'); score++; document.getElementById('next-btn').classList.remove('hidden'); }
+                        } else { memoryFlipped[0].classList.remove('flipped'); memoryFlipped[1].classList.remove('flipped'); }
+                        memoryFlipped = [];
+                    }, 800);
+                }
+            };
+            grid.appendChild(card);
+        });
+        area.appendChild(grid);
+    }
+
+    // 7. MINILAB
+    function renderMinilab(ch) {
+        const area = document.getElementById('challenge-area');
+        let html = `<div style="background:#edf2f7; padding:15px; border-radius:8px; margin-bottom:15px;"><i>${ch.question}</i></div>`;
+        html += `<div class='drag-container'><div class='draggables' id='ml-list'></div><div class='dropzones' id='ml-zones'></div></div><button class='btn' id='ml-btn' style="margin-top:20px;">Verificar Experimento</button>`;
+        area.innerHTML += html;
+
+        let opts = ch.factors.map(f => f.drag).concat(ch.distractors).sort(() => Math.random() - 0.5);
+        opts.forEach((o, i) => {
+            let d = document.createElement('div'); d.className = 'draggable'; d.draggable = true; d.innerText = o; d.id = 'ml-d-'+i;
+            d.ondragstart = (e) => { e.dataTransfer.setData('t', o); e.dataTransfer.setData('id', d.id); };
+            document.getElementById('ml-list').appendChild(d);
+        });
+
+        ch.factors.forEach(f => {
+            let zc = document.createElement('div'); zc.className = 'dropzone-wrapper'; zc.style.background = '#ebf8ff'; zc.style.borderColor = '#bee3f8';
+            zc.innerHTML = `<span class='dropzone-label' style="color:var(--primary)">${f.target}</span>`;
+            let z = document.createElement('div'); z.className = 'dropzone'; z.setAttribute('data-exp', f.drag);
+            z.ondragover = e => e.preventDefault();
+            z.ondrop = e => {
+                e.preventDefault();
+                if(z.innerText !== "") { let old = z.getAttribute('data-src'); if(old) document.getElementById(old).style.display = 'block'; }
+                z.innerText = e.dataTransfer.getData('t'); z.setAttribute('data-src', e.dataTransfer.getData('id'));
+                z.classList.add('filled'); document.getElementById(e.dataTransfer.getData('id')).style.display = 'none';
+            };
+            z.onclick = () => { if(z.innerText !== ""){ document.getElementById(z.getAttribute('data-src')).style.display = 'block'; z.innerText=""; z.classList.remove('filled'); } };
+            zc.appendChild(z); document.getElementById('ml-zones').appendChild(zc);
+        });
+
+        document.getElementById('ml-btn').onclick = () => {
+            let zs = document.querySelectorAll('#ml-zones .dropzone'), fill = 0, corr = 0;
+            zs.forEach(z => { if(z.innerText !== "") fill++; });
+            if(fill < ch.factors.length) return alert("Configura todo el experimento.");
+            zs.forEach(z => {
+                z.onclick = null;
+                if(z.innerText === z.getAttribute('data-exp')){ corr++; z.style.borderColor='var(--success)'; z.style.color='var(--success)'; }
+                else { z.style.borderColor='var(--error)'; z.style.color='var(--error)'; z.innerHTML += `<br><small>Era: ${z.getAttribute('data-exp')}</small>`; }
+            });
+            document.querySelectorAll('#ml-list .draggable').forEach(d => d.removeAttribute('draggable'));
+            if(corr === ch.factors.length){ showFeedback('¡Diseño experimental exitoso!', 'success'); score++; } else { showFeedback('Error en el diseño del lab.', 'error'); topicsToReview.add(ch.topic); }
+            document.getElementById('ml-btn').classList.add('hidden'); document.getElementById('next-btn').classList.remove('hidden');
+        };
+    }
+
+    // 8. SORTER
+    function renderSorter(ch) {
+        const area = document.getElementById('challenge-area');
+        let html = `<div class='draggables' style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;" id='sr-items'></div>`;
+        html += `<div class='sorter-bins' id='sr-bins'></div><button class='btn' id='sr-btn' style="margin-top:20px;">Verificar Clasificación</button>`;
+        area.innerHTML += html;
+
+        let items = [...ch.items].sort(() => Math.random() - 0.5);
+        items.forEach((it, i) => {
+            let d = document.createElement('div'); d.className = 'draggable'; d.draggable = true; d.innerText = it.text; d.id = 'sr-i-'+i; d.style.padding="8px"; d.style.fontSize="14px";
+            d.setAttribute('data-bin', it.bin);
+            d.ondragstart = (e) => { e.dataTransfer.setData('id', d.id); };
+            document.getElementById('sr-items').appendChild(d);
+        });
+
+        ch.bins.forEach((b, i) => {
+            let bin = document.createElement('div'); bin.className = 'sorter-bin'; bin.innerHTML = `<h3>${b}</h3>`; bin.setAttribute('data-bidx', i);
+            bin.ondragover = e => { e.preventDefault(); bin.classList.add('dragover'); };
+            bin.ondragleave = e => bin.classList.remove('dragover');
+            bin.ondrop = e => {
+                e.preventDefault(); bin.classList.remove('dragover');
+                let itm = document.getElementById(e.dataTransfer.getData('id'));
+                bin.appendChild(itm);
+            };
+            document.getElementById('sr-bins').appendChild(bin);
+        });
+
+        // Permitir devolver items al origen
+        document.getElementById('sr-items').ondragover = e => e.preventDefault();
+        document.getElementById('sr-items').ondrop = e => { e.preventDefault(); document.getElementById('sr-items').appendChild(document.getElementById(e.dataTransfer.getData('id'))); };
+
+        document.getElementById('sr-btn').onclick = () => {
+            let allPlaced = document.getElementById('sr-items').children.length === 0;
+            if(!allPlaced) return alert("Clasifica todas las tarjetas en los contenedores.");
+            
+            let corr = 0;
+            document.querySelectorAll('.sorter-bin .draggable').forEach(d => {
+                d.removeAttribute('draggable');
+                let targetBin = d.parentElement.getAttribute('data-bidx');
+                if(targetBin === d.getAttribute('data-bin')) { corr++; d.style.backgroundColor='var(--success)'; }
+                else { d.style.backgroundColor='var(--error)'; }
+            });
+
+            if(corr === ch.items.length){ showFeedback('¡Clasificación perfecta!', 'success'); score++; } else { showFeedback('Algunas tarjetas están en el contenedor equivocado.', 'error'); topicsToReview.add(ch.topic); }
+            document.getElementById('sr-btn').classList.add('hidden'); document.getElementById('next-btn').classList.remove('hidden');
+        };
+    }
+
+    // --- SOPORTE TÁCTIL PARA MÓVILES (DRAG & DROP) ---
+    (function() {
+        let dragEl = null;
+        let clone = null;
+        let offsetX = 0, offsetY = 0;
+        let lastHighlight = null;
+
+        function getDropTarget(x, y) {
+            if (clone) clone.style.display = 'none';
+            const elem = document.elementFromPoint(x, y);
+            if (clone) clone.style.display = '';
+            if (!elem) return null;
+            return elem.closest('.dropzone') || elem.closest('.sorter-bin') || elem.closest('#sr-items');
+        }
+
+        document.addEventListener('touchstart', function(e) {
+            const target = e.target.closest('.draggable');
+            if (!target || target.getAttribute('draggable') === null) return;
+
+            dragEl = target;
+            const rect = target.getBoundingClientRect();
+            const touch = e.touches[0];
+            offsetX = touch.clientX - rect.left;
+            offsetY = touch.clientY - rect.top;
+
+            clone = target.cloneNode(true);
+            clone.removeAttribute('id');
+            clone.style.position = 'fixed';
+            clone.style.zIndex = '9999';
+            clone.style.width = rect.width + 'px';
+            clone.style.opacity = '0.85';
+            clone.style.pointerEvents = 'none';
+            clone.style.left = (touch.clientX - offsetX) + 'px';
+            clone.style.top = (touch.clientY - offsetY) + 'px';
+            clone.style.transform = 'rotate(2deg) scale(1.05)';
+            clone.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
+            clone.style.transition = 'none';
+            clone.style.margin = '0';
+            document.body.appendChild(clone);
+
+            dragEl.style.opacity = '0.3';
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', function(e) {
+            if (!dragEl || !clone) return;
+            const touch = e.touches[0];
+            clone.style.left = (touch.clientX - offsetX) + 'px';
+            clone.style.top = (touch.clientY - offsetY) + 'px';
+
+            const target = getDropTarget(touch.clientX, touch.clientY);
+            if (lastHighlight && lastHighlight !== target) {
+                lastHighlight.classList.remove('dragover');
+            }
+            if (target) {
+                target.classList.add('dragover');
+            }
+            lastHighlight = target;
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchend', function(e) {
+            if (!dragEl || !clone) return;
+            const touch = e.changedTouches[0];
+            const target = getDropTarget(touch.clientX, touch.clientY);
+
+            if (lastHighlight) lastHighlight.classList.remove('dragover');
+
+            if (target && target.ondrop) {
+                const fakeEvt = {
+                    preventDefault: function() {},
+                    dataTransfer: {
+                        _store: {},
+                        setData: function(k, v) { this._store[k] = v; },
+                        getData: function(k) { return this._store[k] || ''; }
+                    }
+                };
+                fakeEvt.dataTransfer.setData('text', dragEl.innerText);
+                fakeEvt.dataTransfer.setData('t', dragEl.innerText);
+                fakeEvt.dataTransfer.setData('id', dragEl.id);
+                target.ondrop(fakeEvt);
+            }
+
+            dragEl.style.opacity = '';
+            clone.remove();
+            clone = null;
+            dragEl = null;
+            lastHighlight = null;
+        }, { passive: false });
+    })();
+
+    // --- REPORTE PDF (FORMATO PROFESIONAL) ---
+    function downloadPDF() {
+        const { jsPDF } = window.jspdf; 
+        const doc = new jsPDF();
+        const grade = ((score / challenges.length) * 5.0).toFixed(1);
+
+        // --- ENCABEZADO (HEADER) ---
+        doc.setFillColor(43, 108, 176); // Azul primario
+        doc.rect(0, 0, 210, 45, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(24);
+        doc.text("REPORTE DE EVALUACIÓN", 105, 22, null, null, "center");
+        
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "normal");
+        doc.text("Fundamentos de Diseño Experimental", 105, 32, null, null, "center");
+
+        // --- CAJA DE INFORMACIÓN DEL ESTUDIANTE ---
+        doc.setDrawColor(203, 213, 224);
+        doc.setFillColor(247, 250, 252);
+        doc.roundedRect(20, 55, 170, 25, 3, 3, 'FD');
+        
+        doc.setTextColor(74, 85, 104);
+        doc.setFontSize(12);
+        doc.text("Nombre del Estudiante:", 25, 65);
+        
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(45, 55, 72);
+        doc.text(studentName.toUpperCase(), 75, 65);
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(74, 85, 104);
+        doc.text("Fecha de Evaluación:", 25, 75);
+        
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(45, 55, 72);
+        const today = new Date().toLocaleDateString('es-CO');
+        doc.text(today, 70, 75);
+
+        // --- CAJA DE CALIFICACIÓN ---
+        doc.setDrawColor(203, 213, 224);
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(20, 90, 170, 40, 3, 3, 'FD');
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.setTextColor(43, 108, 176);
+        doc.text("CALIFICACIÓN OBTENIDA", 105, 102, null, null, "center");
+        
+        doc.setFontSize(36);
+        if (grade >= 3.0) { doc.setTextColor(72, 187, 120); } // Verde
+        else { doc.setTextColor(245, 101, 101); } // Rojo
+        doc.text(`${grade} / 5.0`, 105, 120, null, null, "center");
+
+        // --- SECCIÓN DE ANÁLISIS ---
+        doc.setFontSize(14);
+        doc.setTextColor(43, 108, 176);
+        doc.text("ANÁLISIS DE RESULTADOS", 20, 145);
+        
+        doc.setDrawColor(43, 108, 176);
+        doc.setLineWidth(0.5);
+        doc.line(20, 148, 190, 148);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(12);
+        doc.setTextColor(74, 85, 104);
+
+        if(topicsToReview.size === 0) {
+            doc.text("¡Excelente trabajo! Has demostrado un dominio total de los conceptos", 20, 160);
+            doc.text("y retos evaluados en este módulo de Diseño Experimental.", 20, 167);
+        } else {
+            doc.text("Para alcanzar la excelencia, se recomienda repasar y afianzar", 20, 160);
+            doc.text("los siguientes temas:", 20, 167);
+            
+            let yPos = 177; 
+            doc.setFont("helvetica", "bold");
+            topicsToReview.forEach(t => { 
+                // Evitar que el texto se salga de la página (crea nueva página si pasa de 260)
+                if (yPos > 260) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                doc.text(`• ${t}`, 25, yPos); 
+                yPos += 8; 
+            });
+        }
+
+        // --- PIE DE PÁGINA (FOOTER) ---
+        const pageHeight = doc.internal.pageSize.height;
+        doc.setDrawColor(203, 213, 224);
+        doc.setLineWidth(0.2);
+        doc.line(20, pageHeight - 15, 190, pageHeight - 15);
+        
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(10);
+        doc.setTextColor(160, 174, 192);
+        doc.text("Herramienta diseñada por Oscar Ivan Vargas Pineda asistido por IA", 105, pageHeight - 8, null, null, "center");
+
+        doc.save(`Reporte_DisenoExperimental_${studentName.replace(/\s+/g, '_')}.pdf`);
+    }
+
+</script>
+</body>
+</html>
